@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nguyễn Đức Huy — Neural Network & Decision Tree tại Wisteria</title>
+  <style>
+    :root{--bg:#0f1723;--card:#0b1220;--accent:#6ee7b7;--muted:#9aa7b2;--glass:rgba(255,255,255,0.03)}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Arial;background:linear-gradient(180deg,#071028 0%, #071827 60%);color:#e6f0f2}
+    .wrap{max-width:1100px;margin:28px auto;padding:18px}
+    .header{display:flex;align-items:center;gap:16px}
+    .logo{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#8be9d0,#6ec6ff);display:flex;align-items:center;justify-content:center;color:#042; font-weight:800}
+    h1{margin:0;font-size:20px}
+    .sub{color:var(--muted);margin-top:6px}
+    .grid{display:grid;grid-template-columns:1fr 420px;gap:16px;margin-top:18px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:14px;box-shadow:0 6px 24px rgba(5,10,20,0.6);}
+    canvas{width:100%;border-radius:8px;background:linear-gradient(180deg,#071a2a,#072033);display:block}
+    label{display:block;margin-top:10px;font-size:13px;color:var(--muted)}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    input[type=range]{width:160px}
+    .muted{color:var(--muted);font-size:13px}
+    .tree-node{padding:8px;border-radius:8px;background:var(--glass);border:1px solid rgba(255,255,255,0.04);}
+    .tree{display:flex;flex-direction:column;gap:8px}
+    .tree-branch{display:flex;gap:8px}
+    .big-btn{background:linear-gradient(90deg,#4bd6a6,#3aa0ff);border:none;padding:10px 12px;border-radius:10px;color:#042;font-weight:700;cursor:pointer}
+    .story{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:12px;border-radius:10px;margin-top:12px}
+    .footer{margin-top:18px;color:var(--muted);font-size:13px}
+    .highlight{color:var(--accent);font-weight:700}
+    pre{background:#02141a;padding:10px;border-radius:8px;overflow:auto}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="logo">NDH</div>
+      <div>
+        <h1>Nguyễn Đức Huy — Neural Network & Decision Tree tại Wisteria (Ma trận Quỷ Sứ)</h1>
+        <div class="sub">Trang minh họa: cách Huy dùng neural network để hiểu dữ liệu và decision tree để đưa ra quyết định khôn ngoan trong môi trường giả tưởng "Wisteria".</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Left: interactive NN + story -->
+      <div>
+        <div class="card">
+          <h3 style="margin:0">Phần 1 — Neural Network tương tác</h3>
+          <div class="muted">Mô tả nhanh: mạng thần kinh feedforward nhỏ (2 input → 2 hidden → 1 output). Thay đổi trọng số và bias, chạy forward pass, quan sát output.</div>
+
+          <canvas id="nnCanvas" width="720" height="300"></canvas>
+
+          <div class="controls">
+            <div>
+              <label>Input x1 (tính toán)</label>
+              <input id="x1" type="range" min="-3" max="3" step="0.1" value="1">
+              <div class="muted">x1 = <span id="x1Val">1</span></div>
+            </div>
+            <div>
+              <label>Input x2</label>
+              <input id="x2" type="range" min="-3" max="3" step="0.1" value="0.5">
+              <div class="muted">x2 = <span id="x2Val">0.5</span></div>
+            </div>
+            <div>
+              <label>Activation</label>
+              <select id="actSel">
+                <option value="relu">ReLU</option>
+                <option value="sigmoid">Sigmoid</option>
+                <option value="tanh">Tanh</option>
+              </select>
+            </div>
+            <div style="align-self:center">
+              <button class="big-btn" id="randomize">Randomize weights</button>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;margin-top:12px;align-items:center">
+            <div class="muted">Output (ŷ): <span id="nnOut">—</span></div>
+            <div class="muted">(Mô phỏng feed-forward đơn giản)</div>
+          </div>
+
+          <div class="story">
+            <strong>Câu chuyện ngắn:</strong>
+            <p>Nguyễn Đức Huy dùng mạng neuron này để mô phỏng rủi ro ở khu rừng Wisteria — nơi được biết đến trong truyền thuyết là <em>Ma trận Quỷ Sứ</em>. Mạng giúp Huy ước lượng mức độ "nguy hiểm" dựa trên hai đặc trưng (ví dụ: mật độ sương mù và âm thanh lạ). Khi mạng dự đoán rủi ro cao, Huy sẽ chuyển sang bộ phận <em>Decision Tree</em> để đưa ra quyết định rõ ràng (ví dụ: rút lui, tìm nơi ẩn nấp, hoặc tiến lên).</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3 style="margin:0">Phần 2 — Decision Tree: luật để ra quyết định</h3>
+          <div class="muted">Decision tree giúp chuyển dự đoán (mềm) của mạng thành quyết định rành mạch: giữ an toàn hoặc hành động.</div>
+
+          <div class="tree" id="treeRoot" style="margin-top:10px">
+            <div class="tree-branch">
+              <div class="tree-node" style="flex:1">If nnRisk &gt; 0.6 → Check "Visibility"</div>
+            </div>
+            <div class="tree-branch">
+              <div class="tree-node" style="flex:1">If visibility &lt; 0.3 → <strong>Hide</strong></div>
+              <div class="tree-node" style="flex:1">Else if sound &gt; 0.7 → <strong>Retreat</strong></div>
+              <div class="tree-node" style="flex:1">Else → <strong>Move Carefully</strong></div>
+            </div>
+          </div>
+
+          <label>Visibility (0-1)</label>
+          <input id="vis" type="range" min="0" max="1" step="0.01" value="0.5">
+          <div class="muted">visibility = <span id="visVal">0.5</span></div>
+
+          <label>Sound level (0-1)</label>
+          <input id="sound" type="range" min="0" max="1" step="0.01" value="0.2">
+          <div class="muted">sound = <span id="soundVal">0.2</span></div>
+
+          <div style="margin-top:10px">
+            <button id="decideBtn" class="big-btn">Huy đưa ra quyết định</button>
+            <div id="decision" style="margin-top:10px;font-weight:800;color:#cfeef0"></div>
+          </div>
+
+          <div class="muted" style="margin-top:10px">Gợi ý: Decision tree ở trên là minh hoạ một tập luật đơn giản — trong thực tế Huy có thể huấn luyện một cây từ dữ liệu hoặc dùng kết hợp với luật chuyên gia.</div>
+        </div>
+
+      </div>
+
+      <!-- Right: explanation, code snippet -->
+      <div>
+        <div class="card">
+          <h3 style="margin:0">Giải thích ngắn</h3>
+          <p class="muted">Trang này mô phỏng hai công cụ mà Huy dùng:</p>
+          <ul class="muted">
+            <li><strong>Neural Network:</strong> hữu ích để ước lượng rủi ro theo cách mềm (probability). Nó có thể phát hiện mẫu phức tạp trong dữ liệu môi trường.</li>
+            <li><strong>Decision Tree:</strong> chuyển dự đoán mềm thành quyết định rõ ràng (đi/ở/lẩn tránh). Cây rất dễ hiểu cho đội đội, và có thể nhúng luật an toàn.</li>
+          </ul>
+
+          <h4 style="margin-top:10px">Minh hoạ code (feed-forward)</h4>
+          <pre>/* Pseudocode:
+for each input x:
+  h = activation(W1 * x + b1)
+  y = activation(W2 * h + b2)
+  if y &gt; threshold: risk = high
+  else risk = low
+*/</pre>
+
+          <div style="margin-top:8px" class="muted">Bạn có thể tải HTML này và mở cục bộ. Mọi tính toán đều chạy trên trình duyệt — không cần server.</div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3 style="margin:0">Tùy chỉnh/Ý tưởng nâng cao</h3>
+          <ul class="muted">
+            <li>Lưu trọng số và lịch sử quyết định (localStorage) để Huy học lại các lần trước.</li>
+            <li>Sử dụng dữ liệu giả lập để huấn luyện cây quyết định tự động (ví dụ ID3/CART) ngay trên trình duyệt.</li>
+            <li>Kết hợp SHAP/feature importance để giải thích vì sao mạng trả về rủi ro cao.</li>
+          </ul>
+          <div style="margin-top:12px"><button id="exportBtn" class="big-btn">Export trạng thái (JSON)</button></div>
+          <div id="exportOut" class="muted" style="margin-top:8px"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="footer">Muốn mình chỉnh phong cách (theme sáng/tối), thêm phần huấn luyện cây từ dữ liệu mẫu, hoặc biến thành React component không?</div>
+  </div>
+
+<script>
+// --- Simple NN params (2 -> 2 -> 1) ---
+let W1 = [[0.8, -0.5],[0.3, 0.6]]; // 2x2
+let b1 = [0.1, -0.2];
+let W2 = [0.7, -0.4]; // 1x2
+let b2 = 0.05;
+
+const canvas = document.getElementById('nnCanvas');
+const ctx = canvas.getContext('2d');
+const x1 = document.getElementById('x1');
+const x2 = document.getElementById('x2');
+const x1Val = document.getElementById('x1Val');
+const x2Val = document.getElementById('x2Val');
+const actSel = document.getElementById('actSel');
+const nnOut = document.getElementById('nnOut');
+
+function act(v, name){
+  if(name==='relu') return Math.max(0,v);
+  if(name==='sigmoid') return 1/(1+Math.exp(-v));
+  if(name==='tanh') return Math.tanh(v);
+  return v;
+}
+
+function forward(x){
+  // x is [x1,x2]
+  const h = [];
+  for(let i=0;i<2;i++){
+    let s = W1[i][0]*x[0] + W1[i][1]*x[1] + b1[i];
+    h.push(act(s, actSel.value));
+  }
+  let out = W2[0]*h[0] + W2[1]*h[1] + b2;
+  out = act(out, 'sigmoid'); // final as probability
+  return {h,out};
+}
+
+function drawNN(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // positions
+  const left = 80, mid = 320, right = 560;
+  const yIn = [80,220];
+  const yH = [120,200];
+  const yOut = 160;
+  ctx.lineWidth=2;
+  // draw connections
+  for(let i=0;i<2;i++){
+    for(let j=0;j<2;j++){
+      let w = W1[j][i];
+      ctx.beginPath();
+      ctx.moveTo(left, yIn[i]);
+      ctx.lineTo(mid, yH[j]);
+      ctx.strokeStyle = w>=0?`rgba(110,231,183,0.9)`:`rgba(255,120,120,0.9)`;
+      ctx.stroke();
+      ctx.fillStyle=ctx.strokeStyle;
+      ctx.fillText(w.toFixed(2), (left+mid)/2 - 20, (yIn[i]+yH[j])/2 - 6);
+    }
+  }
+  // W2
+  for(let j=0;j<2;j++){
+    let w = W2[j];
+    ctx.beginPath();
+    ctx.moveTo(mid, yH[j]);
+    ctx.lineTo(right, yOut);
+    ctx.strokeStyle = w>=0?`rgba(110,231,183,0.9)`:`rgba(255,120,120,0.9)`;
+    ctx.stroke();
+    ctx.fillText(w.toFixed(2), (mid+right)/2 - 20, (yH[j]+yOut)/2 - 6);
+  }
+  // nodes
+  ctx.fillStyle="#083042";
+  ctx.beginPath(); ctx.arc(left, yIn[0], 26, 0, Math.PI*2); ctx.fill(); ctx.fillStyle="#bfeee0"; ctx.fillText('x1', left-8, yIn[0]+4);
+  ctx.fillStyle="#083042"; ctx.beginPath(); ctx.arc(left, yIn[1], 26, 0, Math.PI*2); ctx.fill(); ctx.fillStyle="#bfeee0"; ctx.fillText('x2', left-8, yIn[1]+4);
+  // hidden
+  for(let j=0;j<2;j++){ ctx.fillStyle="#072c3b"; ctx.beginPath(); ctx.arc(mid, yH[j], 30, 0, Math.PI*2); ctx.fill(); ctx.fillStyle="#d7f7ee"; ctx.fillText('h'+(j+1), mid-10, yH[j]+5); }
+  // out
+  ctx.fillStyle="#021a28"; ctx.beginPath(); ctx.arc(right, yOut, 34, 0, Math.PI*2); ctx.fill(); ctx.fillStyle="#bff0e0"; ctx.fillText('y^', right-12, yOut+6);
+}
+
+function update(){
+  x1Val.textContent = x1.value;
+  x2Val.textContent = x2.value;
+  const res = forward([+x1.value, +x2.value]);
+  nnOut.textContent = res.out.toFixed(3);
+  drawNN();
+}
+
+x1.addEventListener('input', update);
+x2.addEventListener('input', update);
+actSel.addEventListener('change', update);
+
+document.getElementById('randomize').addEventListener('click', ()=>{
+  // randomize weights small
+  for(let i=0;i<2;i++){ for(let j=0;j<2;j++){ W1[i][j] = (Math.random()*2-1).toFixed(2); W1[i][j]=+W1[i][j]; } }
+  b1 = [+(Math.random()*2-1).toFixed(2), +(Math.random()*2-1).toFixed(2)];
+  W2 = [+(Math.random()*2-1).toFixed(2), +(Math.random()*2-1).toFixed(2)]; b2 = +(Math.random()*2-1).toFixed(2);
+  update();
+});
+
+update();
+
+// Decision tree logic
+const vis = document.getElementById('vis');
+const sound = document.getElementById('sound');
+const visVal = document.getElementById('visVal');
+const soundVal = document.getElementById('soundVal');
+const decideBtn = document.getElementById('decideBtn');
+const decision = document.getElementById('decision');
+
+vis.addEventListener('input', ()=> visVal.textContent = vis.value);
+sound.addEventListener('input', ()=> soundVal.textContent = sound.value);
+
+function decisionTree(nnRisk, visibility, soundLevel){
+  // Simple rule-based tree (same as UI)
+  if(nnRisk > 0.6){
+    if(visibility < 0.3) return {action:'Hide', reason:'low visibility + high risk'};
+    if(soundLevel > 0.7) return {action:'Retreat', reason:'loud sounds detected'};
+    return {action:'Move Carefully', reason:'risk moderate, conditions okay'};
+  } else {
+    if(soundLevel > 0.8) return {action:'Retreat', reason:'unexpected loud sound'};
+    return {action:'Proceed', reason:'low risk'};
+  }
+}
+
+decideBtn.addEventListener('click', ()=>{
+  const resNN = forward([+x1.value, +x2.value]);
+  const r = decisionTree(resNN.out, +vis.value, +sound.value);
+  decision.textContent = `${r.action} — ${r.reason} (nnRisk=${resNN.out.toFixed(2)})`;
+});
+
+// Export state
+const exportBtn = document.getElementById('exportBtn');
+const exportOut = document.getElementById('exportOut');
+exportBtn.addEventListener('click', ()=>{
+  const state = {
+    W1, b1, W2, b2,
+    inputs: {x1:+x1.value, x2:+x2.value},
+    vis:+vis.value, sound:+sound.value,
+    nnRisk: forward([+x1.value, +x2.value]).out
+  };
+  const s = JSON.stringify(state, null, 2);
+  exportOut.textContent = 'State JSON ready — copy below or save programmatically.';
+  console.log('export state:', state);
+  // provide download link
+  const blob = new Blob([s], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'wisteria_state.json'; a.textContent='Download JSON'; a.style.display='inline-block'; a.style.marginLeft='8px';
+  exportOut.innerHTML = '';
+  exportOut.appendChild(a);
+});
+
+</script>
+</body>
+</html>
